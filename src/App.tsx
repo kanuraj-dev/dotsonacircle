@@ -1,4 +1,4 @@
-import { Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes } from "react-router-dom";
 import CirclePage from "./CirclePage";
 import AdminPage from "./AdminPage";
 import { useEffect, useState } from "react";
@@ -48,6 +48,7 @@ function App() {
   return (
     <div className="App">
       <Routes>
+        <Route path="/" element={<Navigate to="/circle" />} />
         <Route path="/circle" element={<CirclePage settings={settings} />} />
         <Route path="/admin" element={<AdminPage settings={settings} />} />
       </Routes>
