@@ -3,7 +3,7 @@ import {
   EyeOutlined,
   SettingOutlined,
 } from "@ant-design/icons";
-import { Button, Card, Switch, Typography } from "antd";
+import { Button, Card, Divider, Input, Modal, Switch, Typography } from "antd";
 import Flex from "CirclePage/Flex";
 import React, { useEffect, useState } from "react";
 import { createUseStyles } from "react-jss";
@@ -11,19 +11,55 @@ import supabase from "utils/client";
 
 export default function Admin({ settings }: any) {
   const classes = useStyle();
-  const [hideData, setHideData] = useState(settings[0]?.value === "true");
+  const [hideData, setHideData] = useState(false);
+  const [challengeMode, setChallengeMode] = useState(false);
+  const [challengeDots, setChallengeDots] = useState("0");
 
-  const handleChange = async () => {
+  const [startChllngModalOpen, setStartChllngModalOpen] = useState(false);
+
+  const handleHideDataChange = async () => {
     setHideData(!hideData);
-    let res = await supabase
-      .from("settings")
-      .upsert({ ...settings[0], value: "" + !hideData });
+    await supabase.from("settings").upsert({
+      ...settings.find((item: any) => item.key === "hide_data"),
+      value: "" + !hideData,
+    });
+  };
 
-    console.log(res);
+  const handleChallengeModeChange = async () => {
+    if (!challengeMode) {
+      setStartChllngModalOpen(true);
+    } else {
+      await supabase.from("settings").upsert({
+        ...settings.find((item: any) => item.key === "challenge_mode"),
+        value: "false",
+        data: {
+          dots: 0,
+        },
+      });
+    }
+  };
+
+  const handleChallengeModalOk = async () => {
+    setChallengeMode(!challengeMode);
+    setStartChllngModalOpen(false);
+
+    await supabase.from("settings").upsert({
+      ...settings.find((item: any) => item.key === "challenge_mode"),
+      value: "true",
+      data: {
+        dots: +challengeDots,
+      },
+    });
   };
 
   useEffect(() => {
-    setHideData(settings[0]?.value === "true");
+    setHideData(
+      settings.find((item: any) => item.key === "hide_data")?.value === "true"
+    );
+    setChallengeMode(
+      settings.find((item: any) => item.key === "challenge_mode")?.value ===
+        "true"
+    );
   }, [settings]);
 
   return (
@@ -36,10 +72,32 @@ export default function Admin({ settings }: any) {
           </Flex>
         }
       >
-        <Flex justify="center" align="center">
+        <Modal
+          centered
+          title="Start Challenge"
+          open={startChllngModalOpen}
+          onOk={handleChallengeModalOk}
+          onCancel={() => setStartChllngModalOpen(false)}
+          style={{ maxWidth: 350 }}
+        >
+          <Input
+            value={challengeDots}
+            onChange={(e) => setChallengeDots(e.target.value)}
+            placeholder="No. of Dots"
+          />
+        </Modal>
+        <Flex align="center">
           <span style={{ marginRight: 10 }}>Show Data</span>
-          <Switch checked={hideData} onChange={handleChange} />
+          <Switch checked={hideData} onChange={handleHideDataChange} />
           <span style={{ marginLeft: 10 }}>Hide Data</span>
+        </Flex>
+        <Divider />
+        <Flex align="center">
+          <span style={{ marginRight: 10 }}>Challenge Mode</span>
+          <Switch
+            checked={challengeMode}
+            onChange={handleChallengeModeChange}
+          />
         </Flex>
       </Card>
     </Flex>

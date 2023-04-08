@@ -5,7 +5,7 @@ import {
   EyeOutlined,
   UndoOutlined,
 } from "@ant-design/icons";
-import { Button } from "antd";
+import { Button, message, Modal } from "antd";
 import Flex from "./Flex";
 import CircleGraph from "./CircleGraph";
 
@@ -48,8 +48,8 @@ export default function CirclePage({ settings }: any) {
   const [layoutsUnedited, setLayoutsUnedited] = useState<DataType[]>([]);
   const [hideData, setHideData] = useState(false);
   const [layouts, setLayouts] = useState<DataType[]>([]);
-  const [challengeData, setChallengeData] = useState<DataType>(DataInitalState);
   const [challengeMode, setChallengeMode] = useState(false);
+  const [challengeDotsCount, setChallengeDotsCount] = useState(0);
   const [lineInMaking, setLineInMaking] = useState<any>({});
 
   const [overlappingRegions, setOverlappingRegions] = useState(0);
@@ -122,6 +122,7 @@ export default function CirclePage({ settings }: any) {
         const dot = dots[i];
 
         for (let j = 1; j < dots.length; j++) {
+          if (i === j) continue;
           lines.push({
             x1: dots[j].x,
             y1: dots[j].y,
@@ -239,11 +240,10 @@ export default function CirclePage({ settings }: any) {
           getDistance(dot, { x: lineInMaking.x2, y: lineInMaking.y2 }) <= 10
         ) {
           setData((curr) => {
-            curr.lines = [
-              ...curr.lines,
-              { ...lineInMaking, x2: dot.x, y2: dot.y },
-            ];
-            return curr;
+            return {
+              ...curr,
+              lines: [...curr.lines, { ...lineInMaking, x2: dot.x, y2: dot.y }],
+            };
           });
           setLineInMaking({});
         }
@@ -303,14 +303,14 @@ export default function CirclePage({ settings }: any) {
 
   useEffect(() => {
     if (challengeMode) {
-      let totalDots = challengeData?.dots?.length;
+      let totalDots = data?.dots?.length;
       let possibleLines = layoutsUnedited?.[totalDots - 1]?.lines?.length;
-      console.log(layoutsUnedited?.[totalDots - 1]);
-
-      console.log(totalDots, possibleLines, data.lines?.length);
 
       if (possibleLines === data.lines?.length) {
-        alert("You won!");
+        message.destroy();
+        message.success(
+          "Great! You have successfully completed all the lines."
+        );
       }
     }
   }, [data]);
@@ -346,21 +346,44 @@ export default function CirclePage({ settings }: any) {
       }
       setLayouts(layoutsData);
       setLayoutsUnedited(layoutsData);
-
-      setChallengeData((curr) => ({ ...curr, dots: layoutsData[4].dots }));
     }
   }, [circlePosition]);
 
   useEffect(() => {
-    if (challengeMode) {
-      setData(challengeData);
+    if (challengeMode && layoutsUnedited?.length) {
+      setData((curr) => ({
+        ...DataInitalState,
+        dots: layoutsUnedited[challengeDotsCount - 1].dots,
+      }));
+      Modal.info({
+        centered: true,
+        title: "Challenge Mode",
+        content: `Connect the ${challengeDotsCount} dots on the circle to divide the circle in as many regions as possible.`,
+      });
     }
-  }, [challengeMode, challengeData]);
+  }, [challengeMode, layoutsUnedited]);
 
   useEffect(() => {
-    console.log(settings);
-    setHideData(settings[0]?.value === "true");
+    setHideData(
+      settings.find((item: any) => item.key === "hide_data")?.value === "true"
+    );
+    setChallengeMode(
+      settings.find((item: any) => item.key === "challenge_mode")?.value ===
+        "true"
+    );
+    setChallengeDotsCount(
+      settings.find((item: any) => item.key === "challenge_mode")?.data?.dots ??
+        0
+    );
   }, [settings]);
+
+  useEffect(() => {
+    window.addEventListener("resize", () => window.location.reload());
+
+    return () => {
+      window.removeEventListener("resize", () => window.location.reload());
+    };
+  }, []);
 
   //   Dot Functions / Event Handlers --->
   const handleDotMouseDown = (index: number) => () => {
@@ -487,10 +510,10 @@ export default function CirclePage({ settings }: any) {
       <Flex justify="center" align="center" style={{ padding: "20px" }}>
         <Flex direction="column" justify="center" align="center">
           <h2 style={styles.regionsText}>
-            {hideData ? "_" : calculateRegion(data.dots.length)} Regions
+            {hideData ? "—" : calculateRegion(data.dots.length)} Regions
           </h2>
           <span style={styles.intersectionsText}>
-            {hideData ? "_" : data.intersectngDots?.length} Intersections
+            {hideData ? "— " : data.intersectngDots?.length} Intersections
           </span>
         </Flex>
         {/* <Button type="text" icon={<UndoOutlined />} onClick={handleResetClick}>
