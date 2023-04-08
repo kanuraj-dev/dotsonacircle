@@ -355,7 +355,7 @@ export default function CirclePage({ settings }: any) {
     if (challengeMode && layoutsUnedited?.length) {
       setData((curr) => ({
         ...DataInitalState,
-        dots: layoutsUnedited[challengeDotsCount - 1].dots,
+        dots: layoutsUnedited?.[challengeDotsCount - 1]?.dots,
       }));
       Modal.info({
         centered: true,
