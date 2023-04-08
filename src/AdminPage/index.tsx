@@ -15,6 +15,7 @@ export default function Admin({ settings }: any) {
   const [showIntersections, setShowIntersections] = useState(false);
   const [challengeMode, setChallengeMode] = useState(false);
   const [challengeDots, setChallengeDots] = useState("0");
+  const [placementLocked, setPlacementLocked] = useState(false);
 
   const [startChllngModalOpen, setStartChllngModalOpen] = useState(false);
 
@@ -31,6 +32,14 @@ export default function Admin({ settings }: any) {
     await supabase.from("settings").upsert({
       ...settings.find((item: any) => item.key === "show_intersections"),
       value: "" + !showIntersections,
+    });
+  };
+
+  const handleLockPlacementChange = async () => {
+    setPlacementLocked(!placementLocked);
+    await supabase.from("settings").upsert({
+      ...settings.find((item: any) => item.key === "placement_locked"),
+      value: "" + !placementLocked,
     });
   };
 
@@ -73,6 +82,10 @@ export default function Admin({ settings }: any) {
       settings.find((item: any) => item.key === "show_intersections")?.value ===
         "true"
     );
+    setPlacementLocked(
+      settings.find((item: any) => item.key === "placement_locked")?.value ===
+        "true"
+    );
   }, [settings]);
 
   return (
@@ -99,7 +112,8 @@ export default function Admin({ settings }: any) {
             placeholder="No. of Dots"
           />
         </Modal>
-        <Flex align="center">
+
+        <Flex align="center" justify="space-between">
           <span style={{ marginRight: 10 }}>Show Data</span>
           <Switch checked={hideData} onChange={handleHideDataChange} />
           <span style={{ marginLeft: 10 }}>Hide Data</span>
@@ -107,7 +121,7 @@ export default function Admin({ settings }: any) {
 
         <Divider />
 
-        <Flex align="center">
+        <Flex align="center" justify="space-between">
           <span style={{ marginRight: 10 }}>Show Intersections</span>
           <Switch
             checked={showIntersections}
@@ -117,7 +131,17 @@ export default function Admin({ settings }: any) {
 
         <Divider />
 
-        <Flex align="center">
+        <Flex align="center" justify="space-between">
+          <span style={{ marginRight: 10 }}>Lock Placement</span>
+          <Switch
+            checked={placementLocked}
+            onChange={handleLockPlacementChange}
+          />
+        </Flex>
+
+        <Divider />
+
+        <Flex align="center" justify="space-between">
           <span style={{ marginRight: 10 }}>Challenge Mode</span>
           <Switch
             checked={challengeMode}

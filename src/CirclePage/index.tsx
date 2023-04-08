@@ -46,12 +46,13 @@ export default function CirclePage({ settings }: any) {
   const [data, setData] = useState<DataType>(DataInitalState);
   const [loadedLayoutIndex, setLoadedLayoutIndex] = useState<any>(null);
   const [layoutsUnedited, setLayoutsUnedited] = useState<DataType[]>([]);
-  const [hideData, setHideData] = useState(false);
-  const [showIntersections, setShowIntersections] = useState(false);
   const [layouts, setLayouts] = useState<DataType[]>([]);
   const [challengeMode, setChallengeMode] = useState(false);
   const [challengeDotsCount, setChallengeDotsCount] = useState(0);
   const [lineInMaking, setLineInMaking] = useState<any>({});
+  const [hideData, setHideData] = useState(false);
+  const [showIntersections, setShowIntersections] = useState(false);
+  const [placementLocked, setPlacementLocked] = useState(false);
 
   const [overlappingRegions, setOverlappingRegions] = useState(0);
 
@@ -84,7 +85,7 @@ export default function CirclePage({ settings }: any) {
   const handleAddDot = (e: any) => {
     e.stopPropagation();
 
-    if (challengeMode) return;
+    if (challengeMode || placementLocked) return;
 
     let points = { x: e.clientX, y: e.clientY + window.scrollY };
     setData((curr) => ({ ...curr, dots: [...curr.dots, points] }));
@@ -143,7 +144,7 @@ export default function CirclePage({ settings }: any) {
   };
 
   const handleAddNumber = (e: any) => {
-    if (challengeMode) return;
+    if (challengeMode || placementLocked) return;
 
     if (getDistance(circlePosition, { x: e.clientX, y: e.clientY }) < 175) {
       setData((curr) => ({
@@ -370,6 +371,10 @@ export default function CirclePage({ settings }: any) {
     );
     setChallengeMode(
       settings.find((item: any) => item.key === "challenge_mode")?.value ===
+        "true"
+    );
+    setPlacementLocked(
+      settings.find((item: any) => item.key === "placement_locked")?.value ===
         "true"
     );
     setChallengeDotsCount(
