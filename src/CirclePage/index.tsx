@@ -425,7 +425,12 @@ export default function CirclePage({ settings }: any) {
       onClick={handleWrapperClick}
       style={styles.wrapper}
     >
-      <svg id="svg-container" height={500} width={"100%"} style={{ flex: 1 }}>
+      <svg
+        id="svg-container"
+        height={500}
+        width={"100%"}
+        style={{ flex: 1, minHeight: 500 }}
+      >
         <SvgCircle
           id="main-circle"
           r={180}
