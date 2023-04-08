@@ -12,6 +12,7 @@ import supabase from "utils/client";
 export default function Admin({ settings }: any) {
   const classes = useStyle();
   const [hideData, setHideData] = useState(false);
+  const [showIntersections, setShowIntersections] = useState(false);
   const [challengeMode, setChallengeMode] = useState(false);
   const [challengeDots, setChallengeDots] = useState("0");
 
@@ -22,6 +23,14 @@ export default function Admin({ settings }: any) {
     await supabase.from("settings").upsert({
       ...settings.find((item: any) => item.key === "hide_data"),
       value: "" + !hideData,
+    });
+  };
+
+  const handleShowIntersectionsChange = async () => {
+    setShowIntersections(!showIntersections);
+    await supabase.from("settings").upsert({
+      ...settings.find((item: any) => item.key === "show_intersections"),
+      value: "" + !showIntersections,
     });
   };
 
@@ -60,6 +69,10 @@ export default function Admin({ settings }: any) {
       settings.find((item: any) => item.key === "challenge_mode")?.value ===
         "true"
     );
+    setShowIntersections(
+      settings.find((item: any) => item.key === "show_intersections")?.value ===
+        "true"
+    );
   }, [settings]);
 
   return (
@@ -91,7 +104,19 @@ export default function Admin({ settings }: any) {
           <Switch checked={hideData} onChange={handleHideDataChange} />
           <span style={{ marginLeft: 10 }}>Hide Data</span>
         </Flex>
+
         <Divider />
+
+        <Flex align="center">
+          <span style={{ marginRight: 10 }}>Show Intersections</span>
+          <Switch
+            checked={showIntersections}
+            onChange={handleShowIntersectionsChange}
+          />
+        </Flex>
+
+        <Divider />
+
         <Flex align="center">
           <span style={{ marginRight: 10 }}>Challenge Mode</span>
           <Switch

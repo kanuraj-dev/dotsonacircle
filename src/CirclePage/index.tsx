@@ -47,6 +47,7 @@ export default function CirclePage({ settings }: any) {
   const [loadedLayoutIndex, setLoadedLayoutIndex] = useState<any>(null);
   const [layoutsUnedited, setLayoutsUnedited] = useState<DataType[]>([]);
   const [hideData, setHideData] = useState(false);
+  const [showIntersections, setShowIntersections] = useState(false);
   const [layouts, setLayouts] = useState<DataType[]>([]);
   const [challengeMode, setChallengeMode] = useState(false);
   const [challengeDotsCount, setChallengeDotsCount] = useState(0);
@@ -375,6 +376,10 @@ export default function CirclePage({ settings }: any) {
       settings.find((item: any) => item.key === "challenge_mode")?.data?.dots ??
         0
     );
+    setShowIntersections(
+      settings.find((item: any) => item.key === "show_intersections")?.value ===
+        "true"
+    );
   }, [settings]);
 
   useEffect(() => {
@@ -483,9 +488,10 @@ export default function CirclePage({ settings }: any) {
             onMouseUp={handleDotMouseUp}
           />
         ))}
-        {data.intersectngDots.map((dot: any, index: number) => (
-          <SvgDot {...dot} r={5} key={index} />
-        ))}
+        {showIntersections &&
+          data.intersectngDots.map((dot: any, index: number) => (
+            <SvgDot {...dot} r={5} key={index} />
+          ))}
 
         {data.count.map((dot: any, index: number) => (
           <SvgText
