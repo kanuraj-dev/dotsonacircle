@@ -1,5 +1,10 @@
-import { EyeInvisibleOutlined, EyeOutlined } from "@ant-design/icons";
-import { Button, Switch, Typography } from "antd";
+import {
+  EyeInvisibleOutlined,
+  EyeOutlined,
+  SettingOutlined,
+} from "@ant-design/icons";
+import { Button, Card, Switch, Typography } from "antd";
+import Flex from "CirclePage/Flex";
 import React, { useEffect, useState } from "react";
 import { createUseStyles } from "react-jss";
 import supabase from "utils/client";
@@ -22,20 +27,29 @@ export default function Admin({ settings }: any) {
   }, [settings]);
 
   return (
-    <div className={classes.adminPanel}>
-      <Button
-        type="text"
-        icon={hideData ? <EyeInvisibleOutlined /> : <EyeOutlined />}
-        onClick={handleChange}
+    <Flex justify="center" align="center" className={classes.adminPanel}>
+      <Card
+        title={
+          <Flex justify="center" align="center">
+            <SettingOutlined />
+            <span style={{ marginLeft: 8 }}>Settings</span>
+          </Flex>
+        }
       >
-        {hideData ? "Show" : "Hide"} Data
-      </Button>
-    </div>
+        <Flex justify="center" align="center">
+          <span style={{ marginRight: 10 }}>Show Data</span>
+          <Switch checked={hideData} onChange={handleChange} />
+          <span style={{ marginLeft: 10 }}>Hide Data</span>
+        </Flex>
+      </Card>
+    </Flex>
   );
 }
 
 const useStyle = createUseStyles(({ colors }: Theme) => ({
   adminPanel: {
     padding: 20,
+    minHeight: "100vh",
+    backgroundColor: "aliceblue",
   },
 }));
