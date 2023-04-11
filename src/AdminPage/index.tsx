@@ -2,6 +2,7 @@ import {
   EyeInvisibleOutlined,
   EyeOutlined,
   SettingOutlined,
+  UndoOutlined,
 } from "@ant-design/icons";
 import { Button, Card, Divider, Input, Modal, Switch, Typography } from "antd";
 import Flex from "CirclePage/Flex";
@@ -11,35 +12,71 @@ import supabase from "utils/client";
 
 export default function Admin({ settings }: any) {
   const classes = useStyle();
-  const [hideData, setHideData] = useState(false);
+  const [showRegionsCount, setShowRegionsCount] = useState(false);
+  const [showIntersectionsCount, setShowIntersectionsCount] = useState(false);
   const [showIntersections, setShowIntersections] = useState(false);
   const [challengeMode, setChallengeMode] = useState(false);
   const [challengeDots, setChallengeDots] = useState("0");
   const [placementLocked, setPlacementLocked] = useState(false);
+  const [allowCountRegions, setAllowCountRegions] = useState(false);
+  const [drawLinesMode, setDrawLinesMode] = useState(false);
 
   const [startChllngModalOpen, setStartChllngModalOpen] = useState(false);
 
-  const handleHideDataChange = async () => {
-    setHideData(!hideData);
+  const handleLinesModeChange = async () => {
+    setDrawLinesMode(!drawLinesMode);
+    console.log(settings, settings.draw_lines_mode);
     await supabase.from("settings").upsert({
-      ...settings.find((item: any) => item.key === "hide_data"),
-      value: "" + !hideData,
+      ...settings.draw_lines_mode,
+      bool_value: !drawLinesMode,
+    });
+  };
+
+  const handleShowIntersectionsCountChange = async () => {
+    setShowIntersectionsCount(!showIntersectionsCount);
+    await supabase.from("settings").upsert({
+      ...settings.show_intersections_count,
+      bool_value: !showIntersectionsCount,
+    });
+  };
+
+  const handleShowRegionsCountChange = async () => {
+    setShowRegionsCount((curr) => !curr);
+    console.log(showRegionsCount);
+    await supabase.from("settings").upsert({
+      ...settings.show_regions_count,
+      bool_value: !showRegionsCount,
     });
   };
 
   const handleShowIntersectionsChange = async () => {
     setShowIntersections(!showIntersections);
     await supabase.from("settings").upsert({
-      ...settings.find((item: any) => item.key === "show_intersections"),
-      value: "" + !showIntersections,
+      ...settings.show_intersections,
+      bool_value: !showIntersections,
+    });
+  };
+
+  const handleAllowCountRegionsChange = async () => {
+    setAllowCountRegions(!allowCountRegions);
+    await supabase.from("settings").upsert({
+      ...settings.allow_count_regions,
+      bool_value: !allowCountRegions,
     });
   };
 
   const handleLockPlacementChange = async () => {
     setPlacementLocked(!placementLocked);
     await supabase.from("settings").upsert({
-      ...settings.find((item: any) => item.key === "placement_locked"),
-      value: "" + !placementLocked,
+      ...settings.placement_locked,
+      bool_value: !placementLocked,
+    });
+  };
+
+  const handleResetCircles = async () => {
+    await supabase.from("settings").upsert({
+      ...settings.reset_data,
+      bool_value: true,
     });
   };
 
@@ -48,8 +85,8 @@ export default function Admin({ settings }: any) {
       setStartChllngModalOpen(true);
     } else {
       await supabase.from("settings").upsert({
-        ...settings.find((item: any) => item.key === "challenge_mode"),
-        value: "false",
+        ...settings.challenge_mode,
+        bool_value: false,
         data: {
           dots: 0,
         },
@@ -62,8 +99,8 @@ export default function Admin({ settings }: any) {
     setStartChllngModalOpen(false);
 
     await supabase.from("settings").upsert({
-      ...settings.find((item: any) => item.key === "challenge_mode"),
-      value: "true",
+      ...settings.challenge_mode,
+      bool_value: true,
       data: {
         dots: +challengeDots,
       },
@@ -71,21 +108,15 @@ export default function Admin({ settings }: any) {
   };
 
   useEffect(() => {
-    setHideData(
-      settings.find((item: any) => item.key === "hide_data")?.value === "true"
-    );
-    setChallengeMode(
-      settings.find((item: any) => item.key === "challenge_mode")?.value ===
-        "true"
-    );
-    setShowIntersections(
-      settings.find((item: any) => item.key === "show_intersections")?.value ===
-        "true"
-    );
-    setPlacementLocked(
-      settings.find((item: any) => item.key === "placement_locked")?.value ===
-        "true"
-    );
+    if (settings?.draw_lines_mode !== undefined) {
+      setDrawLinesMode(settings.draw_lines_mode.bool_value);
+      setShowRegionsCount(settings.show_regions_count.bool_value);
+      setShowIntersectionsCount(settings.show_intersections_count.bool_value);
+      setChallengeMode(settings.challenge_mode.bool_value);
+      setShowIntersections(settings.show_intersections.bool_value);
+      setPlacementLocked(settings.placement_locked.bool_value);
+      setAllowCountRegions(settings.allow_count_regions.bool_value);
+    }
   }, [settings]);
 
   return (
@@ -114,9 +145,29 @@ export default function Admin({ settings }: any) {
         </Modal>
 
         <Flex align="center" justify="space-between">
-          <span style={{ marginRight: 10 }}>Show Data</span>
-          <Switch checked={hideData} onChange={handleHideDataChange} />
-          <span style={{ marginLeft: 10 }}>Hide Data</span>
+          <span style={{ marginRight: 10 }}>Automatic Lines</span>
+          <Switch checked={drawLinesMode} onChange={handleLinesModeChange} />
+          <span style={{ marginLeft: 10 }}>Draw Lines</span>
+        </Flex>
+
+        <Divider />
+
+        <Flex align="center" justify="space-between">
+          <span style={{ marginRight: 10 }}>Show Regions Count</span>
+          <Switch
+            checked={showRegionsCount}
+            onChange={handleShowRegionsCountChange}
+          />
+        </Flex>
+
+        <Divider />
+
+        <Flex align="center" justify="space-between">
+          <span style={{ marginRight: 10 }}>Show Intersections Count</span>
+          <Switch
+            checked={showIntersectionsCount}
+            onChange={handleShowIntersectionsCountChange}
+          />
         </Flex>
 
         <Divider />
@@ -126,6 +177,16 @@ export default function Admin({ settings }: any) {
           <Switch
             checked={showIntersections}
             onChange={handleShowIntersectionsChange}
+          />
+        </Flex>
+
+        <Divider />
+
+        <Flex align="center" justify="space-between">
+          <span style={{ marginRight: 10 }}>Allow Count Regions</span>
+          <Switch
+            checked={allowCountRegions}
+            onChange={handleAllowCountRegionsChange}
           />
         </Flex>
 
@@ -148,6 +209,12 @@ export default function Admin({ settings }: any) {
             onChange={handleChallengeModeChange}
           />
         </Flex>
+
+        <Divider />
+
+        <Button icon={<UndoOutlined />} onClick={handleResetCircles}>
+          Reset Circles
+        </Button>
       </Card>
     </Flex>
   );

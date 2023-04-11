@@ -1,13 +1,7 @@
 import { useEffect, useState } from "react";
 import { createUseStyles } from "react-jss";
-import {
-  EyeInvisibleOutlined,
-  EyeOutlined,
-  UndoOutlined,
-} from "@ant-design/icons";
 import { Button, message, Modal } from "antd";
 import Flex from "./Flex";
-import CircleGraph from "./CircleGraph";
 
 import {
   compareDots,
@@ -20,44 +14,32 @@ import {
   reducesLines,
 } from "./functions";
 import { SvgCircle, SvgDot, SvgLine, SvgText } from "./CustomSvgs";
-import CircleLayouts from "./CircleLayouts";
 import { DataType, DataInitalState } from "./types";
-
-const styles: any = {
-  regionsText: { textAlign: "center", margin: "0 15px", flex: 1 },
-  intersectionsText: {
-    textAlign: "center",
-    margin: "5px 15px 0",
-    flex: 1,
-    fontSize: 13,
-  },
-  wrapper: {
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-};
+import { UndoOutlined } from "@ant-design/icons";
+import supabase from "utils/client";
 
 export default function CirclePage({ settings }: any) {
+  const classes = useStyle();
   const [mouseEntered, setMouseEntered] = useState(false);
   const [activeIndex, setActiveIndex] = useState<any>(null);
   const [circlePosition, setCirclePosition] = useState<any>(null);
   const [data, setData] = useState<DataType>(DataInitalState);
-  const [loadedLayoutIndex, setLoadedLayoutIndex] = useState<any>(null);
   const [layoutsUnedited, setLayoutsUnedited] = useState<DataType[]>([]);
   const [layouts, setLayouts] = useState<DataType[]>([]);
   const [challengeMode, setChallengeMode] = useState(false);
-  const [challengeDotsCount, setChallengeDotsCount] = useState(0);
   const [lineInMaking, setLineInMaking] = useState<any>({});
-  const [hideData, setHideData] = useState(false);
+  const [showRegionsCount, setShowRegionsCount] = useState(false);
+  const [showIntersectionsCount, setShowIntersectionsCount] = useState(false);
   const [showIntersections, setShowIntersections] = useState(false);
+  const [allowCountRegions, setAllowCountRegions] = useState(true);
   const [placementLocked, setPlacementLocked] = useState(false);
+  const [drawLinesMode, setDrawLinesMode] = useState(false);
+  const [maxDots, setMaxDots] = useState(9999);
 
   const [overlappingRegions, setOverlappingRegions] = useState(0);
 
   const refreshCircle = () => {
-    if (challengeMode) return;
+    if (drawLinesMode) return;
 
     if (data.dots.length > 1) {
       let linesArr: any[] = [];
@@ -85,10 +67,18 @@ export default function CirclePage({ settings }: any) {
   const handleAddDot = (e: any) => {
     e.stopPropagation();
 
-    if (challengeMode || placementLocked) return;
+    if (placementLocked) return;
+
+    if (data.dots.length >= maxDots)
+      return message.error(`You can add max ${maxDots} dots.`);
 
     let points = { x: e.clientX, y: e.clientY + window.scrollY };
     setData((curr) => ({ ...curr, dots: [...curr.dots, points] }));
+
+    // return before adding line
+    if (drawLinesMode) return;
+
+    alert(drawLinesMode);
 
     if (data.dots.length > 0) {
       let linesArr: any[] = [];
@@ -144,7 +134,10 @@ export default function CirclePage({ settings }: any) {
   };
 
   const handleAddNumber = (e: any) => {
-    if (challengeMode || placementLocked) return;
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!allowCountRegions || placementLocked) return;
 
     if (getDistance(circlePosition, { x: e.clientX, y: e.clientY }) < 175) {
       setData((curr) => ({
@@ -154,7 +147,7 @@ export default function CirclePage({ settings }: any) {
     }
   };
 
-  const createIntersectionsAndTriangles = () => {
+  const createIntersections = () => {
     if (data.lines.length > 2) {
       let intersections: any[] = [];
       let intersectingPairs = [];
@@ -209,11 +202,12 @@ export default function CirclePage({ settings }: any) {
     }
   };
 
-  const handleLoadLayout = (index: number) => {
-    setLoadedLayoutIndex(index);
-  };
-
   const handleLineCreation = (e: any) => {
+    let totalDots = data?.dots?.length;
+    let possibleLines = layoutsUnedited?.[totalDots - 1]?.lines?.length;
+
+    if (possibleLines === data.lines?.length) return;
+
     let startPoints = data.dots[activeIndex];
     let endPoints = {
       x: e.clientX,
@@ -235,7 +229,7 @@ export default function CirclePage({ settings }: any) {
   };
 
   const handleClickUpInChallenge = () => {
-    if (challengeMode && !!lineInMaking?.x2) {
+    if (drawLinesMode && !!lineInMaking?.x2) {
       for (let i = 0; i < data.dots.length; i++) {
         const dot = data.dots[i];
         if (
@@ -281,27 +275,10 @@ export default function CirclePage({ settings }: any) {
         }
       }
 
-      console.log(overlappingDots);
-
       // This is number of more than 3 overlapping dots
       setOverlappingRegions(overlappingDots.length);
     }
   };
-
-  useEffect(() => {
-    if (!!loadedLayoutIndex) {
-      setData({ ...layouts[loadedLayoutIndex] });
-    }
-  }, [loadedLayoutIndex]);
-
-  useEffect(() => {
-    if (!!loadedLayoutIndex) {
-      setLayouts((curr) => {
-        curr[loadedLayoutIndex] = data;
-        return [...curr];
-      });
-    }
-  }, [data]);
 
   useEffect(() => {
     if (challengeMode) {
@@ -318,7 +295,7 @@ export default function CirclePage({ settings }: any) {
   }, [data]);
 
   useEffect(() => {
-    createIntersectionsAndTriangles();
+    createIntersections();
   }, [data.lines]);
 
   useEffect(() => {
@@ -352,39 +329,24 @@ export default function CirclePage({ settings }: any) {
   }, [circlePosition]);
 
   useEffect(() => {
-    if (challengeMode && layoutsUnedited?.length) {
-      setData((curr) => ({
-        ...DataInitalState,
-        dots: layoutsUnedited?.[challengeDotsCount - 1]?.dots,
-      }));
-      Modal.info({
-        centered: true,
-        title: "Challenge Mode",
-        content: `Connect the ${challengeDotsCount} dots on the circle to divide the circle in as many regions as possible.`,
-      });
-    }
-  }, [challengeMode, layoutsUnedited]);
+    if (settings?.draw_lines_mode !== undefined) {
+      setDrawLinesMode(settings.draw_lines_mode.bool_value);
+      setShowRegionsCount(settings.show_regions_count.bool_value);
+      setShowIntersectionsCount(settings.show_intersections_count.bool_value);
+      setChallengeMode(settings.challenge_mode.bool_value);
+      setShowIntersections(settings.show_intersections.bool_value);
+      setPlacementLocked(settings.placement_locked.bool_value);
+      setAllowCountRegions(settings.allow_count_regions.bool_value);
 
-  useEffect(() => {
-    setHideData(
-      settings.find((item: any) => item.key === "hide_data")?.value === "true"
-    );
-    setChallengeMode(
-      settings.find((item: any) => item.key === "challenge_mode")?.value ===
-        "true"
-    );
-    setPlacementLocked(
-      settings.find((item: any) => item.key === "placement_locked")?.value ===
-        "true"
-    );
-    setChallengeDotsCount(
-      settings.find((item: any) => item.key === "challenge_mode")?.data?.dots ??
-        0
-    );
-    setShowIntersections(
-      settings.find((item: any) => item.key === "show_intersections")?.value ===
-        "true"
-    );
+      if (settings.reset_data.bool_value) {
+        setData(DataInitalState);
+        (async () => {
+          await supabase
+            .from("settings")
+            .upsert({ ...settings.reset_data, bool_val: false });
+        })();
+      }
+    }
   }, [settings]);
 
   useEffect(() => {
@@ -412,7 +374,7 @@ export default function CirclePage({ settings }: any) {
   //   Wrapper Event Handlers --->
   const handleWrapperMouseMove = (e: any) => {
     if (mouseEntered) {
-      if (challengeMode) return handleLineCreation(e);
+      if (drawLinesMode) return handleLineCreation(e);
 
       let movedPoints = { x: e.clientX, y: e.clientY };
 
@@ -444,11 +406,7 @@ export default function CirclePage({ settings }: any) {
 
   //   Bottom Menu Event Handlers --->
   const handleResetClick = () => {
-    if (!!loadedLayoutIndex) {
-      setData(layoutsUnedited[loadedLayoutIndex]);
-    } else {
-      setData(DataInitalState);
-    }
+    setData(DataInitalState);
   };
   //   <--- Bottom Menu Event Handlers
 
@@ -456,7 +414,7 @@ export default function CirclePage({ settings }: any) {
     <div
       onMouseMove={handleWrapperMouseMove}
       onClick={handleWrapperClick}
-      style={styles.wrapper}
+      className={classes.wrapper}
     >
       <svg
         id="svg-container"
@@ -495,44 +453,113 @@ export default function CirclePage({ settings }: any) {
         ))}
         {showIntersections &&
           data.intersectngDots.map((dot: any, index: number) => (
-            <SvgDot {...dot} r={5} key={index} />
+            <SvgDot {...dot} r={5} key={index} fill="blue" stroke="blue" />
           ))}
 
-        {data.count.map((dot: any, index: number) => (
-          <SvgText
-            key={index}
-            {...dot}
-            style={{ fontSize: 12, cursor: "pointer" }}
-          >
-            {index + 1}
-          </SvgText>
-        ))}
+        {allowCountRegions &&
+          data.count.map((dot: any, index: number) => (
+            <SvgText
+              key={index}
+              {...dot}
+              style={{ fontSize: 12, cursor: "pointer" }}
+            >
+              {index + 1}
+            </SvgText>
+          ))}
       </svg>
 
-      {!!circlePosition?.containerWidth && (
-        <CircleLayouts
-          layouts={layouts}
-          onLayoutClick={handleLoadLayout}
-          activeLayout={loadedLayoutIndex}
-          circlePosition={circlePosition}
-        />
-      )}
+      <Flex align="center" className={classes.dotsOptionsWrapper}>
+        <>
+          <Flex
+            justify="center"
+            align="center"
+            className={classes.dotsOption}
+            onClick={() => setMaxDots(9999)}
+            style={{
+              background: maxDots === 9999 ? "rgba(0,0,0,0.05)" : "unset",
+            }}
+          >
+            Freestyle
+          </Flex>
+          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((noOfDots) => (
+            <Flex
+              justify="center"
+              align="center"
+              className={classes.dotsOption}
+              onClick={() => setMaxDots(noOfDots)}
+              style={{
+                background: noOfDots === maxDots ? "rgba(0,0,0,0.05)" : "unset",
+              }}
+            >
+              {noOfDots} Dots
+            </Flex>
+          ))}
+        </>
+      </Flex>
 
-      <Flex justify="center" align="center" style={{ padding: "20px" }}>
+      <Flex
+        justify="center"
+        align="center"
+        direction="column"
+        className={classes.bottomContent}
+      >
         <Flex direction="column" justify="center" align="center">
-          <h2 style={styles.regionsText}>
-            {hideData ? "—" : calculateRegion(data.dots.length)} Regions
+          <h2 className={classes.regionsText}>
+            {showRegionsCount ? calculateRegion(data.dots.length) : "—"} Regions
           </h2>
-          <span style={styles.intersectionsText}>
-            {hideData ? "— " : data.intersectngDots?.length} Intersections
+          <span className={classes.intersectionsText}>
+            {showIntersectionsCount ? data.intersectngDots?.length : "—"}{" "}
+            Intersections
           </span>
         </Flex>
-        {/* <Button type="text" icon={<UndoOutlined />} onClick={handleResetClick}>
+
+        <Button
+          icon={<UndoOutlined />}
+          type="text"
+          onClick={handleResetClick}
+          className={classes.resetButton}
+        >
           Reset
-        </Button> */}
+        </Button>
       </Flex>
     </div>
   );
 }
 
-const useStyle = createUseStyles(({ colors }: Theme) => ({}));
+const useStyle = createUseStyles(({ colors }: Theme) => ({
+  dotsOptionsWrapper: {
+    overflowX: "auto",
+    width: "100vw",
+  },
+  regionsText: { textAlign: "center", margin: "0 15px", flex: 1 },
+  intersectionsText: {
+    textAlign: "center",
+    margin: "5px 15px 0",
+    flex: 1,
+    fontSize: 13,
+  },
+  wrapper: {
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  dotsOption: {
+    height: 50,
+    marginLeft: 10,
+    minWidth: 70,
+    padding: [0, 10],
+    borderRadius: 10,
+    cursor: "pointer",
+    fontSize: 16,
+    fontWeight: 500,
+
+    "&:hover": {
+      background: "rgba(0,0,0,0.025) !important",
+    },
+  },
+  bottomContent: { marginTop: 20, padding: 20 },
+  resetButton: {
+    marginTop: 30,
+  },
+}));

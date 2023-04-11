@@ -5,13 +5,18 @@ import { useEffect, useState } from "react";
 import supabase from "utils/client";
 
 function App() {
-  const [settings, setSettings] = useState<any[]>([]);
+  const [settings, setSettings] = useState<any>({});
 
   const initialize = async () => {
     let settings = await supabase.from("settings").select();
 
     if (!!settings.data) {
-      setSettings(settings.data);
+      let settingObj: any = {};
+      for (let i = 0; i < settings.data.length; i++) {
+        const setting = settings.data[i];
+        settingObj[setting.key] = setting;
+      }
+      setSettings(settingObj);
     }
 
     const channel = supabase
@@ -24,17 +29,10 @@ function App() {
           table: "settings",
         },
         (payload) => {
-          console.log(payload);
-
-          let { key, value } = payload.new;
-          setSettings((curr) => {
-            let index = curr.findIndex((setting) => setting.key === key);
-            if (index > -1) {
-              curr[index].value = value;
-              return [...curr];
-            } else {
-              return curr;
-            }
+          let { key, ...values } = payload.new;
+          setSettings((curr: any) => {
+            curr[key] = { ...curr[key], ...values };
+            return { ...curr };
           });
         }
       )
