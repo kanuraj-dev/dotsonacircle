@@ -1,7 +1,7 @@
+import { useEffect, useState } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import CirclePage from "pages/CirclePage";
 import AdminPage from "pages/AdminPage";
-import { useEffect, useState } from "react";
 import supabase from "utils/client";
 
 function App() {
@@ -19,7 +19,7 @@ function App() {
       setSettings(settingObj);
     }
 
-    const channel = supabase
+    supabase
       .channel("schema-db-changes")
       .on(
         "postgres_changes",

@@ -1,8 +1,8 @@
+import React, { useEffect, useState } from "react";
 import { SettingOutlined, UndoOutlined } from "@ant-design/icons";
-import { Button, Card, Divider, Input, Modal, Switch, Typography } from "antd";
-import Flex from "components/Flex";
-import { useEffect, useState } from "react";
+import { Button, Card, Divider, Switch } from "antd";
 import { createUseStyles } from "react-jss";
+import Flex from "components/Flex";
 import supabase from "utils/client";
 
 export default function Admin({ settings }: any) {
@@ -10,13 +10,19 @@ export default function Admin({ settings }: any) {
   const [showRegionsCount, setShowRegionsCount] = useState(false);
   const [showIntersectionsCount, setShowIntersectionsCount] = useState(false);
   const [showIntersections, setShowIntersections] = useState(false);
-  const [challengeMode, setChallengeMode] = useState(false);
-  const [challengeDots, setChallengeDots] = useState("0");
   const [placementLocked, setPlacementLocked] = useState(false);
   const [allowCountRegions, setAllowCountRegions] = useState(false);
   const [drawLinesMode, setDrawLinesMode] = useState(false);
 
-  const [startChllngModalOpen, setStartChllngModalOpen] = useState(false);
+  const handleChange =
+    (key: string, state: boolean, setState: (val: boolean) => void) =>
+    async () => {
+      setState(!state);
+      await supabase.from("settings").upsert({
+        ...settings[key],
+        bool_value: !state,
+      });
+    };
 
   const handleLinesModeChange = async () => {
     setDrawLinesMode(!drawLinesMode);
@@ -75,39 +81,11 @@ export default function Admin({ settings }: any) {
     });
   };
 
-  const handleChallengeModeChange = async () => {
-    if (!challengeMode) {
-      setStartChllngModalOpen(true);
-    } else {
-      await supabase.from("settings").upsert({
-        ...settings.challenge_mode,
-        bool_value: false,
-        data: {
-          dots: 0,
-        },
-      });
-    }
-  };
-
-  const handleChallengeModalOk = async () => {
-    setChallengeMode(!challengeMode);
-    setStartChllngModalOpen(false);
-
-    await supabase.from("settings").upsert({
-      ...settings.challenge_mode,
-      bool_value: true,
-      data: {
-        dots: +challengeDots,
-      },
-    });
-  };
-
   useEffect(() => {
     if (settings?.draw_lines_mode !== undefined) {
       setDrawLinesMode(settings.draw_lines_mode.bool_value);
       setShowRegionsCount(settings.show_regions_count.bool_value);
       setShowIntersectionsCount(settings.show_intersections_count.bool_value);
-      setChallengeMode(settings.challenge_mode.bool_value);
       setShowIntersections(settings.show_intersections.bool_value);
       setPlacementLocked(settings.placement_locked.bool_value);
       setAllowCountRegions(settings.allow_count_regions.bool_value);
@@ -124,24 +102,16 @@ export default function Admin({ settings }: any) {
           </Flex>
         }
       >
-        <Modal
-          centered
-          title="Start Challenge"
-          open={startChllngModalOpen}
-          onOk={handleChallengeModalOk}
-          onCancel={() => setStartChllngModalOpen(false)}
-          style={{ maxWidth: 350 }}
-        >
-          <Input
-            value={challengeDots}
-            onChange={(e) => setChallengeDots(e.target.value)}
-            placeholder="No. of Dots"
-          />
-        </Modal>
-
         <Flex align="center" justify="space-between">
           <span style={{ marginRight: 10 }}>Automatic Lines</span>
-          <Switch checked={drawLinesMode} onChange={handleLinesModeChange} />
+          <Switch
+            checked={drawLinesMode}
+            onChange={handleChange(
+              "draw_lines_mode",
+              drawLinesMode,
+              setDrawLinesMode
+            )}
+          />
           <span style={{ marginLeft: 10 }}>Draw Lines</span>
         </Flex>
 
@@ -151,7 +121,11 @@ export default function Admin({ settings }: any) {
           <span style={{ marginRight: 10 }}>Show Regions Count</span>
           <Switch
             checked={showRegionsCount}
-            onChange={handleShowRegionsCountChange}
+            onChange={handleChange(
+              "show_regions_count",
+              showRegionsCount,
+              setShowRegionsCount
+            )}
           />
         </Flex>
 
@@ -161,7 +135,11 @@ export default function Admin({ settings }: any) {
           <span style={{ marginRight: 10 }}>Show Intersections Count</span>
           <Switch
             checked={showIntersectionsCount}
-            onChange={handleShowIntersectionsCountChange}
+            onChange={handleChange(
+              "show_intersections_count",
+              showIntersectionsCount,
+              setShowIntersectionsCount
+            )}
           />
         </Flex>
 
@@ -171,7 +149,11 @@ export default function Admin({ settings }: any) {
           <span style={{ marginRight: 10 }}>Show Intersections</span>
           <Switch
             checked={showIntersections}
-            onChange={handleShowIntersectionsChange}
+            onChange={handleChange(
+              "show_intersections",
+              showIntersections,
+              setShowIntersections
+            )}
           />
         </Flex>
 
@@ -181,7 +163,11 @@ export default function Admin({ settings }: any) {
           <span style={{ marginRight: 10 }}>Allow Count Regions</span>
           <Switch
             checked={allowCountRegions}
-            onChange={handleAllowCountRegionsChange}
+            onChange={handleChange(
+              "allow_count_regions",
+              allowCountRegions,
+              setAllowCountRegions
+            )}
           />
         </Flex>
 
@@ -191,17 +177,11 @@ export default function Admin({ settings }: any) {
           <span style={{ marginRight: 10 }}>Lock Placement</span>
           <Switch
             checked={placementLocked}
-            onChange={handleLockPlacementChange}
-          />
-        </Flex>
-
-        <Divider />
-
-        <Flex align="center" justify="space-between">
-          <span style={{ marginRight: 10 }}>Challenge Mode</span>
-          <Switch
-            checked={challengeMode}
-            onChange={handleChallengeModeChange}
+            onChange={handleChange(
+              "placement_locked",
+              placementLocked,
+              setPlacementLocked
+            )}
           />
         </Flex>
 
