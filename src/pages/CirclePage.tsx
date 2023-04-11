@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { createUseStyles } from "react-jss";
 import { Button, message, Modal } from "antd";
-import Flex from "./Flex";
+import Flex from "components/Flex";
 
 import {
   compareDots,
@@ -12,22 +12,34 @@ import {
   getIntersection,
   calculateRegion,
   reducesLines,
-} from "./functions";
-import { SvgCircle, SvgDot, SvgLine, SvgText } from "./CustomSvgs";
-import { DataType, DataInitalState } from "./types";
+} from "components/functions";
+import { SvgCircle, SvgDot, SvgLine, SvgText } from "components/CustomSvgs";
+import { DataType, DataInitalState } from "components/types";
 import { UndoOutlined } from "@ant-design/icons";
 import supabase from "utils/client";
 
-export default function CirclePage({ settings }: any) {
+const Configs = {
+  containerHeight: 500,
+  circleRadius: 180,
+};
+
+interface CirclePageProps {
+  settings: any;
+}
+
+export default function CirclePage({ settings }: CirclePageProps) {
   const classes = useStyle();
-  const [mouseEntered, setMouseEntered] = useState(false);
-  const [activeIndex, setActiveIndex] = useState<any>(null);
-  const [circlePosition, setCirclePosition] = useState<any>(null);
   const [data, setData] = useState<DataType>(DataInitalState);
-  const [layoutsUnedited, setLayoutsUnedited] = useState<DataType[]>([]);
-  const [layouts, setLayouts] = useState<DataType[]>([]);
-  const [challengeMode, setChallengeMode] = useState(false);
+
+  const [activeIndex, setActiveIndex] = useState<any>(null);
+  const [mouseEntered, setMouseEntered] = useState(false);
+  const [circlePosition, setCirclePosition] = useState<any>(null);
+  const [layouts, setLayouts] = useState<DataType[]>([]); // preloaded layout for dots 1-10
+  const [layoutsUnedited, setLayoutsUnedited] = useState<DataType[]>([]); // preloaded layout for dots 1-10 (shouldn't be edited)
   const [lineInMaking, setLineInMaking] = useState<any>({});
+  const [overlappingRegions, setOverlappingRegions] = useState(0); // count of overlapping regions (no of points where overlapping dots >= 3)
+
+  // states for admin options
   const [showRegionsCount, setShowRegionsCount] = useState(false);
   const [showIntersectionsCount, setShowIntersectionsCount] = useState(false);
   const [showIntersections, setShowIntersections] = useState(false);
@@ -36,9 +48,7 @@ export default function CirclePage({ settings }: any) {
   const [drawLinesMode, setDrawLinesMode] = useState(false);
   const [maxDots, setMaxDots] = useState(9999);
 
-  const [overlappingRegions, setOverlappingRegions] = useState(0);
-
-  const refreshCircle = () => {
+  const handleRefreshCircle = () => {
     if (drawLinesMode) return;
 
     if (data.dots.length > 1) {
@@ -75,10 +85,8 @@ export default function CirclePage({ settings }: any) {
     let points = { x: e.clientX, y: e.clientY + window.scrollY };
     setData((curr) => ({ ...curr, dots: [...curr.dots, points] }));
 
-    // return before adding line
+    // return before adding line for the dot
     if (drawLinesMode) return;
-
-    alert(drawLinesMode);
 
     if (data.dots.length > 0) {
       let linesArr: any[] = [];
@@ -99,6 +107,21 @@ export default function CirclePage({ settings }: any) {
     }
   };
 
+  const handleAddNumber = (e: any) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!allowCountRegions || placementLocked) return;
+
+    if (getDistance(circlePosition, { x: e.clientX, y: e.clientY }) < 175) {
+      setData((curr) => ({
+        ...curr,
+        count: [...curr.count, { x: e.clientX, y: e.clientY }],
+      }));
+    }
+  };
+
+  // e.g., if totalDots is 5, it'll return preloaded data for 5 dots
   const generateDataFromAngle = (totalDots: number) => {
     let dataToReturn = { ...DataInitalState };
 
@@ -130,20 +153,6 @@ export default function CirclePage({ settings }: any) {
         ...dataToReturn,
         dots: [getPointFromAngle(circlePosition, -180)],
       };
-    }
-  };
-
-  const handleAddNumber = (e: any) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    if (!allowCountRegions || placementLocked) return;
-
-    if (getDistance(circlePosition, { x: e.clientX, y: e.clientY }) < 175) {
-      setData((curr) => ({
-        ...curr,
-        count: [...curr.count, { x: e.clientX, y: e.clientY }],
-      }));
     }
   };
 
@@ -202,7 +211,7 @@ export default function CirclePage({ settings }: any) {
     }
   };
 
-  const handleLineCreation = (e: any) => {
+  const createLine = (e: any) => {
     let totalDots = data?.dots?.length;
     let possibleLines = layoutsUnedited?.[totalDots - 1]?.lines?.length;
 
@@ -228,7 +237,7 @@ export default function CirclePage({ settings }: any) {
     });
   };
 
-  const handleClickUpInChallenge = () => {
+  const handleClickUpInDrawMode = () => {
     if (drawLinesMode && !!lineInMaking?.x2) {
       for (let i = 0; i < data.dots.length; i++) {
         const dot = data.dots[i];
@@ -249,7 +258,7 @@ export default function CirclePage({ settings }: any) {
     }
   };
 
-  const removeOverlappingRegions = () => {
+  const calculateOverlappingRegions = () => {
     if (data.dots.length >= 6) {
       let overlappingDots: any[] = [];
 
@@ -280,83 +289,6 @@ export default function CirclePage({ settings }: any) {
     }
   };
 
-  useEffect(() => {
-    if (challengeMode) {
-      let totalDots = data?.dots?.length;
-      let possibleLines = layoutsUnedited?.[totalDots - 1]?.lines?.length;
-
-      if (possibleLines === data.lines?.length) {
-        message.destroy();
-        message.success(
-          "Great! You have successfully completed all the lines."
-        );
-      }
-    }
-  }, [data]);
-
-  useEffect(() => {
-    createIntersections();
-  }, [data.lines]);
-
-  useEffect(() => {
-    removeOverlappingRegions();
-  }, [data.intersectngDots]);
-
-  useEffect(() => {
-    let data = document.getElementById("main-circle")?.getBoundingClientRect();
-    let svgContainer = document.getElementById("svg-container");
-    setCirclePosition({
-      // @ts-ignore
-      x: data.left + 180,
-      // @ts-ignore
-      y: data.top + 180,
-      containerWidth: svgContainer?.clientWidth,
-    });
-  }, [
-    document.getElementById("main-circle"),
-    document.getElementById("svg-container"),
-  ]);
-
-  useEffect(() => {
-    if (!!circlePosition) {
-      let layoutsData: DataType[] = [];
-      for (let i = 1; i <= 10; i++) {
-        layoutsData.push(generateDataFromAngle(i));
-      }
-      setLayouts(layoutsData);
-      setLayoutsUnedited(layoutsData);
-    }
-  }, [circlePosition]);
-
-  useEffect(() => {
-    if (settings?.draw_lines_mode !== undefined) {
-      setDrawLinesMode(settings.draw_lines_mode.bool_value);
-      setShowRegionsCount(settings.show_regions_count.bool_value);
-      setShowIntersectionsCount(settings.show_intersections_count.bool_value);
-      setChallengeMode(settings.challenge_mode.bool_value);
-      setShowIntersections(settings.show_intersections.bool_value);
-      setPlacementLocked(settings.placement_locked.bool_value);
-      setAllowCountRegions(settings.allow_count_regions.bool_value);
-
-      if (settings.reset_data.bool_value) {
-        setData(DataInitalState);
-        (async () => {
-          await supabase
-            .from("settings")
-            .upsert({ ...settings.reset_data, bool_val: false });
-        })();
-      }
-    }
-  }, [settings]);
-
-  useEffect(() => {
-    window.addEventListener("resize", () => window.location.reload());
-
-    return () => {
-      window.removeEventListener("resize", () => window.location.reload());
-    };
-  }, []);
-
   //   Dot Functions / Event Handlers --->
   const handleDotMouseDown = (index: number) => () => {
     setMouseEntered(true);
@@ -366,15 +298,15 @@ export default function CirclePage({ settings }: any) {
   const handleDotMouseUp = () => {
     setMouseEntered(false);
     setActiveIndex(null);
-    refreshCircle();
-    handleClickUpInChallenge();
+    handleRefreshCircle();
+    handleClickUpInDrawMode();
   };
   //   <--- Dot Functions / Event Handlers
 
   //   Wrapper Event Handlers --->
   const handleWrapperMouseMove = (e: any) => {
     if (mouseEntered) {
-      if (drawLinesMode) return handleLineCreation(e);
+      if (drawLinesMode) return createLine(e);
 
       let movedPoints = { x: e.clientX, y: e.clientY };
 
@@ -399,8 +331,8 @@ export default function CirclePage({ settings }: any) {
   const handleWrapperClick = () => {
     setMouseEntered(false);
     setActiveIndex(null);
-    refreshCircle();
-    handleClickUpInChallenge();
+    handleRefreshCircle();
+    handleClickUpInDrawMode();
   };
   //   <--- Wrapper Event Handlers
 
@@ -410,6 +342,69 @@ export default function CirclePage({ settings }: any) {
   };
   //   <--- Bottom Menu Event Handlers
 
+  // useEffects
+  useEffect(() => {
+    createIntersections();
+  }, [data.lines]);
+
+  useEffect(() => {
+    calculateOverlappingRegions();
+  }, [data.intersectngDots]);
+
+  useEffect(() => {
+    let data = document.getElementById("main-circle")?.getBoundingClientRect();
+    let svgContainer = document.getElementById("svg-container");
+    setCirclePosition({
+      // @ts-ignore
+      x: data.left + 180,
+      // @ts-ignore
+      y: data.top + 180,
+      containerWidth: svgContainer?.clientWidth,
+    });
+  }, [
+    document.getElementById("main-circle"),
+    document.getElementById("svg-container"),
+  ]);
+
+  useEffect(() => {
+    window.addEventListener("resize", () => window.location.reload());
+    return () => {
+      window.removeEventListener("resize", () => window.location.reload());
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!!circlePosition) {
+      let layoutsData: DataType[] = [];
+      for (let i = 1; i <= 10; i++) {
+        layoutsData.push(generateDataFromAngle(i));
+      }
+      setLayouts(layoutsData);
+      setData(layoutsData[7]);
+      setLayoutsUnedited(layoutsData);
+    }
+  }, [circlePosition]);
+
+  useEffect(() => {
+    if (settings?.draw_lines_mode !== undefined) {
+      setDrawLinesMode(settings.draw_lines_mode.bool_value);
+      setShowRegionsCount(settings.show_regions_count.bool_value);
+      setShowIntersectionsCount(settings.show_intersections_count.bool_value);
+      setShowIntersections(settings.show_intersections.bool_value);
+      setPlacementLocked(settings.placement_locked.bool_value);
+      setAllowCountRegions(settings.allow_count_regions.bool_value);
+
+      if (settings.reset_data.bool_value) {
+        setData(DataInitalState);
+        (async () => {
+          await supabase
+            .from("settings")
+            .upsert({ ...settings.reset_data, bool_val: false });
+        })();
+      }
+    }
+  }, [settings]);
+
   return (
     <div
       onMouseMove={handleWrapperMouseMove}
@@ -418,18 +413,19 @@ export default function CirclePage({ settings }: any) {
     >
       <svg
         id="svg-container"
-        height={500}
+        height={Configs.containerHeight}
         width={"100%"}
-        style={{ flex: 1, minHeight: 500 }}
+        style={{ flex: 1, minHeight: Configs.containerHeight }}
       >
         <SvgCircle
           id="main-circle"
-          r={180}
+          r={Configs.circleRadius}
           strokeWidth="3"
           onClick={handleAddDot}
         />
+
         <SvgCircle
-          r={177}
+          r={Configs.circleRadius - 3}
           strokeWidth="3"
           stroke="transparent"
           style={{ cursor: "pointer" }}
@@ -561,5 +557,10 @@ const useStyle = createUseStyles(({ colors }: Theme) => ({
   bottomContent: { marginTop: 20, padding: 20 },
   resetButton: {
     marginTop: 30,
+  },
+  "@media (min-width: 1000px)": {
+    dotsOptionsWrapper: {
+      justifyContent: "center",
+    },
   },
 }));

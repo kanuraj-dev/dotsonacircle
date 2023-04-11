@@ -1,6 +1,6 @@
 import { Navigate, Route, Routes } from "react-router-dom";
-import CirclePage from "./CirclePage";
-import AdminPage from "./AdminPage";
+import CirclePage from "pages/CirclePage";
+import AdminPage from "pages/AdminPage";
 import { useEffect, useState } from "react";
 import supabase from "utils/client";
 

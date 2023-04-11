@@ -1,12 +1,7 @@
-import {
-  EyeInvisibleOutlined,
-  EyeOutlined,
-  SettingOutlined,
-  UndoOutlined,
-} from "@ant-design/icons";
+import { SettingOutlined, UndoOutlined } from "@ant-design/icons";
 import { Button, Card, Divider, Input, Modal, Switch, Typography } from "antd";
-import Flex from "CirclePage/Flex";
-import React, { useEffect, useState } from "react";
+import Flex from "components/Flex";
+import { useEffect, useState } from "react";
 import { createUseStyles } from "react-jss";
 import supabase from "utils/client";
 
