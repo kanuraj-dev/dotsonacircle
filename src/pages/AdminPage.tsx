@@ -24,56 +24,6 @@ export default function Admin({ settings }: any) {
       });
     };
 
-  const handleLinesModeChange = async () => {
-    setDrawLinesMode(!drawLinesMode);
-    console.log(settings, settings.draw_lines_mode);
-    await supabase.from("settings").upsert({
-      ...settings.draw_lines_mode,
-      bool_value: !drawLinesMode,
-    });
-  };
-
-  const handleShowIntersectionsCountChange = async () => {
-    setShowIntersectionsCount(!showIntersectionsCount);
-    await supabase.from("settings").upsert({
-      ...settings.show_intersections_count,
-      bool_value: !showIntersectionsCount,
-    });
-  };
-
-  const handleShowRegionsCountChange = async () => {
-    setShowRegionsCount((curr) => !curr);
-    console.log(showRegionsCount);
-    await supabase.from("settings").upsert({
-      ...settings.show_regions_count,
-      bool_value: !showRegionsCount,
-    });
-  };
-
-  const handleShowIntersectionsChange = async () => {
-    setShowIntersections(!showIntersections);
-    await supabase.from("settings").upsert({
-      ...settings.show_intersections,
-      bool_value: !showIntersections,
-    });
-  };
-
-  const handleAllowCountRegionsChange = async () => {
-    setAllowCountRegions(!allowCountRegions);
-    await supabase.from("settings").upsert({
-      ...settings.allow_count_regions,
-      bool_value: !allowCountRegions,
-    });
-  };
-
-  const handleLockPlacementChange = async () => {
-    setPlacementLocked(!placementLocked);
-    await supabase.from("settings").upsert({
-      ...settings.placement_locked,
-      bool_value: !placementLocked,
-    });
-  };
-
   const handleResetCircles = async () => {
     await supabase.from("settings").upsert({
       ...settings.reset_data,

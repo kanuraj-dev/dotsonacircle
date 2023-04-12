@@ -70,7 +70,7 @@ export default function CirclePage({ settings }: CirclePageProps) {
 
       setData((curr) => ({ ...curr, lines: reducesLines(linesArr) }));
     } else {
-      setData(DataInitalState);
+      // setData(DataInitalState);
     }
   };
 
@@ -83,7 +83,10 @@ export default function CirclePage({ settings }: CirclePageProps) {
       return message.error(`You can add max ${maxDots} dots.`);
 
     let points = { x: e.clientX, y: e.clientY + window.scrollY };
-    setData((curr) => ({ ...curr, dots: [...curr.dots, points] }));
+    let dotAngle = getAngleFromPoint(points, circlePosition);
+    let newDot = getPointFromAngle(circlePosition, dotAngle);
+
+    setData((curr) => ({ ...curr, dots: [...curr.dots, newDot] }));
 
     // return before adding line for the dot
     if (drawLinesMode) return;
@@ -367,7 +370,9 @@ export default function CirclePage({ settings }: CirclePageProps) {
   ]);
 
   useEffect(() => {
-    window.addEventListener("resize", () => window.location.reload());
+    window.addEventListener("res", () => {
+      window.location.reload();
+    });
     return () => {
       window.removeEventListener("resize", () => window.location.reload());
     };
@@ -380,7 +385,6 @@ export default function CirclePage({ settings }: CirclePageProps) {
         layoutsData.push(generateDataFromAngle(i));
       }
       setLayouts(layoutsData);
-      setData(layoutsData[7]);
       setLayoutsUnedited(layoutsData);
     }
   }, [circlePosition]);
@@ -399,7 +403,7 @@ export default function CirclePage({ settings }: CirclePageProps) {
         (async () => {
           await supabase
             .from("settings")
-            .upsert({ ...settings.reset_data, bool_val: false });
+            .upsert({ ...settings.reset_data, bool_value: false });
         })();
       }
     }
@@ -417,15 +421,17 @@ export default function CirclePage({ settings }: CirclePageProps) {
         width={"100%"}
         style={{ flex: 1, minHeight: Configs.containerHeight }}
       >
-        <SvgCircle
-          id="main-circle"
-          r={Configs.circleRadius}
-          strokeWidth="3"
-          onClick={handleAddDot}
-        />
+        <SvgCircle id="main-circle" r={Configs.circleRadius} strokeWidth="3" />
 
         <SvgCircle
-          r={Configs.circleRadius - 3}
+          r={Configs.circleRadius + 5}
+          strokeWidth="3"
+          stroke="transparent"
+          style={{ cursor: "pointer" }}
+          onClick={handleAddDot}
+        />
+        <SvgCircle
+          r={Configs.circleRadius - 10}
           strokeWidth="3"
           stroke="transparent"
           style={{ cursor: "pointer" }}
@@ -438,6 +444,11 @@ export default function CirclePage({ settings }: CirclePageProps) {
 
         {!!lineInMaking?.x1 && <SvgLine {...lineInMaking} strokeWidth={2} />}
 
+        {showIntersections &&
+          data.intersectngDots.map((dot: any, index: number) => (
+            <SvgDot {...dot} r={5} key={index} fill="blue" stroke="blue" />
+          ))}
+
         {data.dots.map((dot: any, index: number) => (
           <SvgDot
             {...dot}
@@ -447,10 +458,6 @@ export default function CirclePage({ settings }: CirclePageProps) {
             onMouseUp={handleDotMouseUp}
           />
         ))}
-        {showIntersections &&
-          data.intersectngDots.map((dot: any, index: number) => (
-            <SvgDot {...dot} r={5} key={index} fill="blue" stroke="blue" />
-          ))}
 
         {allowCountRegions &&
           data.count.map((dot: any, index: number) => (
