@@ -38,6 +38,7 @@ export default function CirclePage({ settings }: CirclePageProps) {
   const [layoutsUnedited, setLayoutsUnedited] = useState<DataType[]>([]); // preloaded layout for dots 1-10 (shouldn't be edited)
   const [lineInMaking, setLineInMaking] = useState<any>({});
   const [overlappingRegions, setOverlappingRegions] = useState(0); // count of overlapping regions (no of points where overlapping dots >= 3)
+  const [canceledIntersection, setCanceledIntersection] = useState(0); // count of overlapping regions (no of points where overlapping dots >= 3)
 
   // states for admin options
   const [showRegionsCount, setShowRegionsCount] = useState(false);
@@ -264,6 +265,7 @@ export default function CirclePage({ settings }: CirclePageProps) {
   const calculateOverlappingRegions = () => {
     if (data.dots.length >= 6) {
       let overlappingDots: any[] = [];
+      let overlappingDotsCount = 0;
 
       for (let i = 0; i < data.intersectngDots.length; i++) {
         const dot = data.intersectngDots[i];
@@ -280,6 +282,10 @@ export default function CirclePage({ settings }: CirclePageProps) {
             (otherDot) => getDistance(dot, otherDot) < 5
           ).length > 2
         ) {
+          overlappingDotsCount +=
+            data.intersectngDots.filter(
+              (otherDot) => getDistance(dot, otherDot) < 5
+            ).length - 1;
           overlappingDots.push({
             x: Math.floor(dot.x),
             y: Math.floor(dot.y),
@@ -288,6 +294,7 @@ export default function CirclePage({ settings }: CirclePageProps) {
       }
 
       // This is number of more than 3 overlapping dots
+      setCanceledIntersection(overlappingDotsCount);
       setOverlappingRegions(overlappingDots.length);
     }
   };
@@ -508,10 +515,15 @@ export default function CirclePage({ settings }: CirclePageProps) {
       >
         <Flex direction="column" justify="center" align="center">
           <h2 className={classes.regionsText}>
-            {showRegionsCount ? calculateRegion(data.dots.length) : "—"} Regions
+            {showRegionsCount
+              ? calculateRegion(data.dots.length) - overlappingRegions
+              : "—"}{" "}
+            Regions
           </h2>
           <span className={classes.intersectionsText}>
-            {showIntersectionsCount ? data.intersectngDots?.length : "—"}{" "}
+            {showIntersectionsCount
+              ? data.intersectngDots?.length - canceledIntersection
+              : "—"}{" "}
             Intersections
           </span>
         </Flex>
