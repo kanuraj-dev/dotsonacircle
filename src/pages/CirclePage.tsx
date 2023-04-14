@@ -12,6 +12,7 @@ import {
   getIntersection,
   calculateRegion,
   reducesLines,
+  isBetween,
 } from "components/functions";
 import { SvgCircle, SvgDot, SvgLine, SvgText } from "components/CustomSvgs";
 import { DataType, DataInitalState } from "components/types";
@@ -192,12 +193,22 @@ export default function CirclePage({ settings }: CirclePageProps) {
             { x: otherLine.x1, y: otherLine.y1 },
             { x: otherLine.x2, y: otherLine.y2 }
           );
+          console.log(data.dots);
+
           if (
             !!point &&
             data.dots.filter(
               (item: any) =>
-                Math.floor(item.x) === Math.floor(point?.x) &&
-                Math.floor(item.y) === Math.floor(point?.y)
+                isBetween(
+                  Math.floor(item.x),
+                  Math.floor(point?.x) - 3,
+                  Math.floor(point?.x) + 3
+                ) &&
+                isBetween(
+                  Math.floor(item.y),
+                  Math.floor(point?.y) - 3,
+                  Math.floor(point?.y) + 3
+                )
             ).length === 0
           ) {
             intersectingPairs.push({
@@ -210,6 +221,8 @@ export default function CirclePage({ settings }: CirclePageProps) {
           }
         }
       }
+
+      console.log(intersections);
 
       setData((curr) => ({ ...curr, intersectngDots: intersections }));
     }
@@ -348,7 +361,7 @@ export default function CirclePage({ settings }: CirclePageProps) {
 
   //   Bottom Menu Event Handlers --->
   const handleResetClick = () => {
-    setData(DataInitalState);
+    window.location.reload();
   };
   //   <--- Bottom Menu Event Handlers
 
@@ -407,6 +420,7 @@ export default function CirclePage({ settings }: CirclePageProps) {
 
       if (settings.reset_data.bool_value) {
         setData(DataInitalState);
+        handleResetClick();
         (async () => {
           await supabase
             .from("settings")

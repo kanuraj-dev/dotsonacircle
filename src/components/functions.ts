@@ -73,6 +73,10 @@ const calculateRegion = (n: number) => {
   return z * (a - b + c - d + 24);
 };
 
+const isBetween = (x: number, min: number, max: number) => {
+  return x >= min && x <= max;
+};
+
 const reducesLines = (linesArr: any[]) =>
   linesArr.reduce((prev, curr) => {
     if (
@@ -99,4 +103,5 @@ export {
   getIntersection,
   calculateRegion,
   reducesLines,
+  isBetween,
 };
