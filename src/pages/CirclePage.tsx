@@ -201,13 +201,13 @@ export default function CirclePage({ settings }: CirclePageProps) {
               (item: any) =>
                 isBetween(
                   Math.floor(item.x),
-                  Math.floor(point?.x) - 3,
-                  Math.floor(point?.x) + 3
+                  Math.floor(point?.x) - 5,
+                  Math.floor(point?.x) + 5
                 ) &&
                 isBetween(
                   Math.floor(item.y),
-                  Math.floor(point?.y) - 3,
-                  Math.floor(point?.y) + 3
+                  Math.floor(point?.y) - 5,
+                  Math.floor(point?.y) + 5
                 )
             ).length === 0
           ) {
